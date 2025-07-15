@@ -8,6 +8,17 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
+class DataFrameInterpolator(BaseEstimator, TransformerMixin):
+    def __init__(self, method='linear'):
+        self.method = method
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X = pd.DataFrame(X)
+        return X.interpolate(method=self.method, axis=0).values
+
 df = pd.read_csv('data/data.csv')
 # report = ProfileReport(df, title="Data Profiling Report", explorative=True)
 # report.to_file('./output/profile_report.html')
@@ -27,17 +38,6 @@ y_train = y[:train_size]
 X_test = X[train_size:]
 y_test = y[train_size:]
 
-class DataFrameInterpolator(BaseEstimator, TransformerMixin):
-    def __init__(self, method='linear'):
-        self.method = method
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        X = pd.DataFrame(X)
-        return X.interpolate(method=self.method, axis=0).values
-
 num_transform = Pipeline([
     ('interpolate', DataFrameInterpolator(method='linear')),
     ('scale', StandardScaler())
@@ -50,8 +50,10 @@ ord_transform = Pipeline([
     ('encode', OrdinalEncoder(categories=district_values))
 ])
 
+num_features = ['up', 'rnti_count', 'mcs_down', 'mcs_down_var', 'mcs_up', 'mcs_up_var', 'rb_down', 'rb_down_var', 'rb_up', 'rb_up_var']
+
 preprocessor = ColumnTransformer(transformers=[
-    ('num', num_transform, ['up', 'rnti_count', 'mcs_down', 'mcs_down_var', 'mcs_up', 'mcs_up_var', 'rb_down', 'rb_down_var', 'rb_up', 'rb_up_var']),
+    ('num', num_transform, num_features),
     ('ord', ord_transform, ['District'])
 ])
 
