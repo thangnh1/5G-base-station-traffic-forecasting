@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
@@ -18,10 +19,28 @@ target = 'down'
 y = df[target]
 X = df.drop(target, axis=1)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+train_ratio = 0.8
+train_size = int(len(X) * train_ratio)
+
+X_train = X[:train_size]
+y_train = y[:train_size]
+
+X_test = X[train_size:]
+y_test = y[train_size:]
+
+class DataFrameInterpolator(BaseEstimator, TransformerMixin):
+    def __init__(self, method='linear'):
+        self.method = method
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X = pd.DataFrame(X)
+        return X.interpolate(method=self.method, axis=0).values
 
 num_transform = Pipeline([
-    ('imputer', SimpleImputer(strategy='median')),
+    ('interpolate', DataFrameInterpolator(method='linear')),
     ('scale', StandardScaler())
 ])
 
@@ -50,6 +69,6 @@ print("Mean Absolute Error:", mean_absolute_error(y_test, y_pred))
 print("Mean Squared Error:", mean_squared_error(y_test, y_pred))
 print("R2 Score:", r2_score(y_test, y_pred))
 
-# Mean Absolute Error: 6365590.877231168
-# Mean Squared Error: 500843708747209.9
-# R2 Score: 0.9777988150267249
+# Mean Absolute Error: 7250441.422702203
+# Mean Squared Error: 375017737602300.0
+# R2 Score: 0.9623997666631796
